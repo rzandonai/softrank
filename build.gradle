@@ -1,0 +1,71 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'com.github.johnrengelman.shadow' version '5.0.0'
+}
+
+group = 'br.com.rzandonai'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+  maven {
+    url 'https://oss.sonatype.org/content/repositories/snapshots'
+    mavenContent {
+      snapshotsOnly()
+    }
+  }
+  mavenCentral()
+}
+
+ext {
+  vertxVersion = '4.0.0-SNAPSHOT'
+  junitJupiterEngineVersion = '5.4.0'
+}
+
+application {
+  mainClassName = 'io.vertx.core.Launcher'
+}
+
+sourceCompatibility = '1.8'
+
+def mainVerticleName = 'br.com.rzandonai.softrank.MainVerticle'
+def watchForChange = 'src/**/*'
+def doOnChange = './gradlew classes'
+
+dependencies {
+  implementation "io.vertx:vertx-rx-java2:$vertxVersion"
+  implementation "io.vertx:vertx-junit5:$vertxVersion"
+  implementation "io.vertx:vertx-health-check:$vertxVersion"
+  implementation "io.vertx:vertx-web:$vertxVersion"
+  implementation "io.vertx:vertx-pg-client:$vertxVersion"
+  implementation "io.vertx:vertx-mail-client:$vertxVersion"
+  implementation "io.vertx:vertx-auth-oauth2:$vertxVersion"
+  implementation "io.vertx:vertx-dropwizard-metrics:$vertxVersion"
+  implementation "io.vertx:vertx-reactive-streams:$vertxVersion"
+
+  testImplementation "io.vertx:vertx-junit5:$vertxVersion"
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterEngineVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
+}
+
+
+shadowJar {
+  classifier = 'fat'
+  manifest {
+    attributes 'Main-Verticle': mainVerticleName
+  }
+  mergeServiceFiles {
+    include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
+  }
+}
+
+test {
+  useJUnitPlatform()
+  testLogging {
+    events 'PASSED', 'FAILED', 'SKIPPED'
+  }
+}
+
+run {
+  args = ['run', mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange"]
+}
